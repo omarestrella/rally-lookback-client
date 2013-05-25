@@ -42,46 +42,39 @@ class LookbackApi(object):
         return resp.status_code == 401 and 'www-authenticate' in resp.headers
 
 
-class LookbackResponse(object):
-    raw_response = {}
+class LookbackObject(object):
+    raw_content = {}
+
+    def get_class_name(self):
+        return self.__class__.__name__
+
+    def __getattr__(self, name):
+        if name in self.raw_content:
+            return self.raw_content[name]
+        raise AttributeError('%s does not contain the %s attribute' % (self.get_class_name(), name))
+
+    def __getitem__(self, key):
+        return self.__getattr__(key)
+
+    def __dir__(self):
+        return self.raw_content.keys()
+
+
+class LookbackResponse(LookbackObject):
     snapshots = []
 
-    def __init__(self, raw_response):
-        self.raw_response = raw_response
+    def __init__(self, response):
+        self.raw_content = response
         self.build_snapshots()
 
     def build_snapshots(self):
-        results = self.raw_response['Results']
+        results = self.raw_content['Results']
         self.snapshots = [Snapshot(snapshot_data) for snapshot_data in results]
 
-    def __getattr__(self, name):
-        if name in self.raw_response:
-            return self.raw_response[name]
-        raise AttributeError('The response does not contain the %s attribute' % name)
 
-    def __getitem__(self, key):
-        return self.__getattr__(key)
-
-    def __dir__(self):
-        return self.raw_response.keys()
-
-
-class Snapshot(object):
-    snapshot_data = {}
-
+class Snapshot(LookbackObject):
     def __init__(self, snapshot):
-        self.snapshot_data = snapshot
+        self.raw_content = snapshot
 
     def __iter__(self):
-        return self.snapshot_data.itervalues()
-
-    def __getattr__(self, name):
-        if name in self.snapshot_data:
-            return self.snapshot_data[name]
-        raise AttributeError('Snapshot does not contain the %s attribute' % name)
-
-    def __getitem__(self, key):
-        return self.__getattr__(key)
-
-    def __dir__(self):
-        return self.snapshot_data.keys()
+        return self.raw_content.itervalues()
