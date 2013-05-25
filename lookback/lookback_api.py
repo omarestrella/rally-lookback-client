@@ -54,6 +54,17 @@ class LookbackResponse(object):
         results = self.raw_response['Results']
         self.snapshots = [Snapshot(snapshot_data) for snapshot_data in results]
 
+    def __getattr__(self, name):
+        if name in self.raw_response:
+            return self.raw_response[name]
+        raise AttributeError('The response does not contain the %s attribute' % name)
+
+    def __getitem__(self, key):
+        return self.__getattr__(key)
+
+    def __dir__(self):
+        return self.raw_response.keys()
+
 
 class Snapshot(object):
     snapshot_data = {}
@@ -71,3 +82,6 @@ class Snapshot(object):
 
     def __getitem__(self, key):
         return self.__getattr__(key)
+
+    def __dir__(self):
+        return self.snapshot_data.keys()
