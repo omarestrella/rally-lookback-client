@@ -5,6 +5,22 @@ from requests import exceptions
 
 
 class LookbackApi(object):
+    """
+    This class is the client wrapper for Rally's Lookback API that can be used to run queries against the
+    API and receive native Python objects in response.
+
+    If you wanted to grab the schedule state and plan estimate for all stories, you can do something like::
+
+        from lookback.lookback_api import LookbackApi
+
+        client = LookbackApi("my_rally_username", "my_rally_password", "my_rally_workspace")
+        response = client.query({
+            "Project": 279050021
+        }, ("ScheduleState", "PlanEstimate"))
+
+    A query run with `LookbackApi` returns a `LookbackResponse` object. The response object contains a list of
+    `LookbackSnapshot` objects.
+    """
     username = ''
     password = ''
     api_url = ''
@@ -28,10 +44,10 @@ class LookbackApi(object):
 
     def handle_response_content(self, resp):
         if self.is_auth_response(resp):
-            raise exceptions.RequestException("Authentication required")
+            raise exceptions.HTTPError("Authentication required")
         content = resp.json()
         if not resp.ok:
-            raise exceptions.RequestException(content['Errors'][0])
+            raise exceptions.HTTPError(content['Errors'][0])
         return LookbackResponse(content)
 
     def build_url(self, workspace):
@@ -70,6 +86,11 @@ class LookbackResponse(LookbackObject):
     def build_snapshots(self):
         results = self.raw_content['Results']
         self.snapshots = [Snapshot(snapshot_data) for snapshot_data in results]
+
+    def __dir__(self):
+        attrs = super(LookbackResponse, self).__dir__()
+        attrs.append('snapshots')
+        return attrs
 
 
 class Snapshot(LookbackObject):
